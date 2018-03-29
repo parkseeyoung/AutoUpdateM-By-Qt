@@ -990,7 +990,18 @@ bool Widget::TestWebService()
         return false;
     }
     soap wb_soap;
-    soap_init(&wb_soap);wb_soap.accept_timeout = 1;
+    soap_init(&wb_soap);
+    QString str_endpoint = "http://"+m_addr[m_addrIndex]+":190/updataService.asmx";
+    char endpoint[1024];
+    strcpy(endpoint,qPrintable(str_endpoint));
+    wb_soap.send_timeout = 10;
+    wb_soap.recv_timeout = 10;
+
+#define uSec *-1
+#define mSec *-1000
+    wb_soap.accept_timeout = 10 uSec;
+    wb_soap.send_timeout = 20 mSec;
+    wb_soap.recv_timeout = 20 mSec;
 
     //soap_call_dataStream(&add_soap,server,"",name,data,returnFlag)
     _ns1__HelloWorld helloworld;
@@ -1000,7 +1011,7 @@ bool Widget::TestWebService()
 
     soap_call___ns1__HelloWorld(
                 &wb_soap,
-                NULL,
+                endpoint,
                 NULL,
                 &helloworld,
                 helloworldResponse
@@ -1071,6 +1082,7 @@ QString Widget::queryData_WS()
 //处理xml，用信号槽，等xmlconfig处理完了以后通知主线程的槽，完成view的刷新
 void Widget::updateInfoInquire()
 {
-    TestWebService();
+    if(TestWebService() == false)
+        return;
     queryData_WS();
 }
