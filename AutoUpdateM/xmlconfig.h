@@ -3,6 +3,7 @@
 
 #include <QtXml>
 #include <QStandardItemModel>
+#include <QSqlQuery>
 //自定义树节点
 class treeNode
 {
@@ -40,6 +41,10 @@ public:
     static void createXml(QStandardItemModel *treemodel, QStandardItemModel *tablemodel,QString softname);
     //更新upRecordTable
     static void refreshUpRecordTable(QStandardItemModel *model, QString dwname);
+
+    //解析下载数据
+    static void parseDownloadXML(QString xmlStr, QSqlQuery sq);
+
     //处理WebServices返回的xml数据
     void getUpdateInfo(QString _xmlStr, QStandardItemModel *_tableModel);
     QString getOneQueryData(QString _xmlStr);

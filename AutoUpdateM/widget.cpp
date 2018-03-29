@@ -73,9 +73,13 @@ void Widget::iniAction()
     saveAction = menu->addAction(QString::fromLocal8Bit("保存"));
     exitAction = menu->addAction(QString::fromLocal8Bit("退出"));
 
+    QMenu *menu_data = new QMenu(QString::fromLocal8Bit("数据同步"));
+    downloadDataAction = menu_data->addAction(QString::fromLocal8Bit("数据下载"));
+    uploadDataAction = menu_data->addAction(QString::fromLocal8Bit("数据上传"));
 
     statusbar = new QStatusBar();
     menubar->addMenu(menu);
+    menubar->addMenu(menu_data);
 
     //建立QTreeView的右键菜单
     QAction *setThisSer = new QAction(QString::fromLocal8Bit("设置当前服务器"));
@@ -183,7 +187,57 @@ void Widget::iniConnect()
 /*********************connect*************************/
     connect(exitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
     connect(saveAction, SIGNAL(triggered(bool)),this,SLOT(saveTable(bool)));
+
+    connect(uploadDataAction,SIGNAL(triggered(bool)),this,SLOT(uploadDataSlot()));
+    connect(downloadDataAction,SIGNAL(triggered(bool)),this,SLOT(downloadDataSlot()));
 }
+//数据上传
+void Widget::uploadDataSlot()
+{
+    /*
+     *将本地的BD_AU_单位字典表上传同步到服务器上（根据其唯一编码）
+     */
+    QString sqlStr = QString::fromLocal8Bit("select 编码,ip from BD_AU_单位字典表");
+    QString sql;
+    QSqlQuery query(QSqlDatabase::database("MyAccessDB"));
+    query.exec(sqlStr);
+    QString temp_code,temp_ip;
+    if(TestWebService()==false)
+    {
+        QMessageBox::critical(this,QString::fromLocal8Bit("出错"),QString::fromLocal8Bit("连不上服务器接口，无法进行数据同步"));
+        return;
+    }
+    while(query.next())
+    {
+        temp_code = query.value(QString::fromLocal8Bit("编码")).toString();
+        temp_ip = query.value(QString::fromLocal8Bit("ip")).toString();
+        sql = QString::fromLocal8Bit("update BD_AU_单位字典表 set ip = '")+temp_ip+QString::fromLocal8Bit("' where 编码 = '")+temp_code+"'";
+        //通过webservice的接口上传数据
+        if(!execute_WS(sql))
+        {
+            QMessageBox::critical(this,QString::fromLocal8Bit("出错"),QString::fromLocal8Bit("与服务器接口，无法进行数据同步"));
+            break;
+        }
+    }
+}
+//数据下载
+void Widget::downloadDataSlot()
+{
+    /*
+     *将服务器上的BD_AU_单位字典表下载到本地的personInfo数据库中
+     */
+    if(m_addrIndex <0 )
+        return;
+    QSqlQuery sqlQy(QSqlDatabase::database("MyAccessDB"));
+    QString sqlStr;
+    //先通过ws获取数据再插入,又是xml数据
+    sqlStr = QString::fromLocal8Bit("select * from BD_AU_单位字典表");
+    QString xmlStr = queryData_WS(sqlStr);
+    QString sqlClearStr = QString::fromLocal8Bit("delete from BD_AU_单位字典表");
+    sqlQy.exec(sqlClearStr);
+    XmlConfig::parseDownloadXML(xmlStr,sqlQy);
+}
+
 //上传情况
 void Widget::iniUpRecordTable()
 {
@@ -627,8 +681,7 @@ void Widget::saveTable(bool)
 
     if(m_addrIndex==-1)
         return;
-    TestWebService();
-    queryData_WS();
+    updateInfoInquire();
 }
 //上传文件
 QFileInfoList GetFileList(QString path)
@@ -1028,7 +1081,7 @@ bool Widget::TestWebService()
     return true;
 }
 //其实应该要放到线程中去，不然如果连不上的话回卡死
-QString Widget::queryData_WS()
+QString Widget::queryData_WS(QString sql)
 {
     //连不上服务器
     if(m_addrIndex<0)
@@ -1037,8 +1090,7 @@ QString Widget::queryData_WS()
         upInfoTreeMd->clear();
         return "";
     }
-    //最后显示的时候要以一个树形结构显示出来
-    QString sql = QString::fromLocal8Bit("select 单位名称,编码,上级编码,软件名称,S_UDTIME,更新成功,服务器名称,IP地址 from AU_UPLOADRECORD");
+
 
     char*  ch;
     QByteArray ba = sql.toUtf8();
@@ -1048,7 +1100,6 @@ QString Widget::queryData_WS()
     soap wb_soap;
     soap_init(&wb_soap);
     soap_set_mode(&wb_soap,SOAP_C_UTFSTRING);
-    XmlConfig xc;
     QString str_endpoint = "http://"+m_addr[m_addrIndex]+":190/updataService.asmx";
     char endpoint[1024];
     strcpy(endpoint,qPrintable(str_endpoint));
@@ -1076,13 +1127,50 @@ QString Widget::queryData_WS()
     }
     QString ret = QString::fromUtf8(qdResponse.QueryDataResult);
     soap_end(&wb_soap);
-    xc.getUpdateInfo(ret,upInfoTreeMd);
-    return true;
+    return ret;
 }
+//插入语句
 //处理xml，用信号槽，等xmlconfig处理完了以后通知主线程的槽，完成view的刷新
 void Widget::updateInfoInquire()
 {
     if(TestWebService() == false)
         return;
-    queryData_WS();
+    //最后显示的时候要以一个树形结构显示出来
+    QString sql = QString::fromLocal8Bit("select 单位名称,编码,上级编码,软件名称,S_UDTIME,更新成功,服务器名称,IP地址 from AU_UPLOADRECORD");
+    QString ret = queryData_WS(sql);
+    XmlConfig xc;
+    xc.getUpdateInfo(ret,upInfoTreeMd);
+}
+bool Widget::execute_WS(QString sql)
+{
+    soap wb_soap;
+    soap_init(&wb_soap);
+    soap_set_mode(&wb_soap,SOAP_C_UTFSTRING);
+
+    char*  ch;
+    QByteArray ba = sql.toUtf8();
+    ch=ba.data();
+
+    QString str_endpoint = "http://"+m_addr[m_addrIndex]+":190/updataService.asmx";
+    char endpoint[1024];
+    strcpy(endpoint,qPrintable(str_endpoint));
+
+    _ns1__ExecuteSql es;
+    es.sql = ch;
+
+    _ns1__ExecuteSqlResponse esResponse;
+    soap_call___ns1__ExecuteSql(
+                &wb_soap,
+                endpoint,
+                NULL,
+                &es,
+                esResponse
+                );
+
+    if(wb_soap.error)
+    {
+        soap_end(&wb_soap);
+        return false;
+    }
+    return true;
 }

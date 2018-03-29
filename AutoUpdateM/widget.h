@@ -40,7 +40,7 @@ public:
     ~Widget();
 
     bool TestWebService();
-    QString queryData_WS();
+    QString queryData_WS(QString sql);
 
 private slots:
     void treeClick(const QModelIndex &index);
@@ -77,10 +77,19 @@ private slots:
 
     //uptree被点击
     void upRecordTreeClick(const QModelIndex &index);
+
+    //数据上传和数据下载
+    void uploadDataSlot();
+    void downloadDataSlot();
+
 //Action
 public:
     QAction *exitAction;
     QAction *saveAction;
+
+    QAction *downloadDataAction;
+    QAction *uploadDataAction;
+
     QStatusBar *statusbar;
 
     //当前选中的treeindex
@@ -195,6 +204,10 @@ private:
 
     //uptable刷新
     void upRecordTabelRefresh(QString);
+
+private:
+    //ExecuteSql
+    bool execute_WS(QString sql);
 
 };
 

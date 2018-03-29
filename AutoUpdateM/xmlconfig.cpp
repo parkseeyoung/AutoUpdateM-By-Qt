@@ -334,3 +334,75 @@ void XmlConfig::clear()
     treeNodes.clear();
     tableNodes.clear();
 }
+void XmlConfig::parseDownloadXML(QString xmlStr,QSqlQuery sq)
+{
+    QDomDocument doc;   //新建QDomDocument代表一个xml文档
+    doc.setContent(xmlStr);
+    qDebug()<<xmlStr;
+    //初始化
+    treeNodes.clear();
+    tableNodes.clear();
+
+    //解析各个节点
+    QDomElement docElem = doc.documentElement();//返回根元素
+    for(int index = 0 ; index < docElem.childNodes().count(); index++)  //实际只有一个就是NewDataSet
+    {
+        if(index == 1)
+            break;
+        QDomNode n = docElem.childNodes().at(index);
+        qDebug()<<"n.nodeName is :"<<n.nodeName();
+        while(1)
+        {
+            if(n.nextSibling().isNull())
+                break;
+            QDomElement e = n.toElement();//将其转换为元素
+            QDomNodeList list = e.childNodes();//获得元素e的所有子节点的列表
+            /*
+             * 0    ID
+             * 1    分类编码
+             * 2    序号
+             * 3    单位编号
+             * 4    类码
+             * 5    名称
+             * 6    编码
+             * 7    上级编码
+             * 8    管辖电务段数量
+             * 9    电务职工总数
+             * 10   换算道岔组数
+             * 11   管辖里程
+             * 12   所属铁路局
+             * 13   站场数量
+             * 14   车间数量
+             * 15   生产班组数量
+             * 16   在岗人数
+             * 17   固定资产
+             * 18   IP
+            */
+            QString id = list.at(0).toElement().text();
+            QString code = list.at(1).toElement().text();
+            QString number = list.at(2).toElement().text();
+            QString dwCode = list.at(3).toElement().text();
+            QString classCode = list.at(4).toElement().text();
+            QString name = list.at(5).toElement().text();
+            QString bCode = list.at(6).toElement().text();
+            QString upbCode = list.at(7).toElement().text();
+            QString eight = list.at(8).toElement().text();
+            QString nine = list.at(9).toElement().text();
+            QString ten = list.at(10).toElement().text();
+            QString eleven = list.at(11).toElement().text();
+            QString twelve = list.at(12).toElement().text();
+            QString thirteen = list.at(13).toElement().text();
+            QString fourteen = list.at(14).toElement().text();
+            QString fifteen = list.at(15).toElement().text();
+            QString sixteen = list.at(16).toElement().text();
+            QString seventeen = list.at(17).toElement().text();
+            QString ip = list.at(18).toElement().text();
+
+            QString sql = QString::fromLocal8Bit("insert into BD_AU_单位字典表 values("
+                                                 "%1,%2,%3,%4,'%5','%6','%7','%8','%9','%10','%11','%12','%13','%14','%15','%16','%17','%18','%19')"
+                                                 "").arg(id).arg(code).arg(number).arg(dwCode).arg(classCode).arg(name).arg(bCode).arg(upbCode)
+                    .arg(eight).arg(nine).arg(ten).arg(eleven).arg(twelve).arg(thirteen).arg(fourteen).arg(fifteen).arg(sixteen).arg(seventeen).arg(ip);
+            sq.exec(sql);
+        }
+    }
+}
