@@ -1,0 +1,137 @@
+﻿#ifndef WIDGET_H
+#define WIDGET_H
+
+#include <QWidget>
+#include <QtWidgets>
+#include <QtSql/QtSql>
+#include <QStandardItemModel>
+#include "mydatabase.h"
+#include <QFile>
+#include <QTcpServer>
+#include "uploaddelegate.h"
+#include "uploadfile.h"
+#include "xmlconfig.h"
+#include "runupload.h"
+#include <QThreadPool>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
+
+
+//全局原子对象
+extern std::atomic<int> threadCount = 0;
+//全局互斥锁
+extern std::mutex mtx;
+//全局条件变量
+std::condition_variable cv;
+
+
+class Widget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    Widget(QWidget *parent = 0);
+    ~Widget();
+
+private slots:
+    void treeClick(const QModelIndex &index);
+    void treeItemChanged(QStandardItem * item);
+
+    void updateCheckTree(const QModelIndex &index);
+    void saveTable(bool);
+    void uploadingTable();
+    void submitFile();
+    void showToolTip(const QModelIndex &index);
+    //右键菜单
+    void TreeViewcontextMenu(const QPoint &pos);
+
+    //设置这个服务器
+    void setServer();
+    //单个文件上传成功
+    void fileUploadFinished(const int row, const bool result);
+//Action
+public:
+    QAction *exitAction;
+    QAction *saveAction;
+    QStatusBar *statusbar;
+
+    //当前选中的index
+    QModelIndex selectedIndex;
+    //当前服务器
+    QModelIndex currentIndex;
+private:
+    QTreeView *view;
+    MyDataBase *m_pDB;
+    QTableView * tview;
+    QStandardItemModel *tmodel;
+    QSqlRelationalTableModel *qtm;
+    //上传的table
+    QTableView *ut;
+    QStandardItemModel *utModel;
+
+
+    //checktree and Configuration file
+    QSplitter *config;
+
+    //上传情况查询
+    QSplitter *upInfo;
+    QTreeView *checkedTree;
+    QStandardItemModel* ctmodel;
+    //菜单
+    QMenuBar *menubar;
+
+    //文件名称列表
+    QStringList * list_file;
+
+    //QTreeView的右键菜单
+    QMenu * m_treeMenu;
+
+private:
+    void iniAction();
+    void iniConnect();
+    void iniTable();
+    void iniTree();
+    //通过数据库新建节点
+    void addCheckedItem();
+    //上传文件表
+    void iniUploadTable();
+    //绑定数据
+    void addUploadFile();
+
+    void updateTree();
+    void updateTable();
+    void updateUT();
+    //上传情况表
+    void iniUpRecordTable();
+
+    //加载样式表
+    void initStyle();
+
+    bool ConnectDB(QString strPath);
+
+
+    //获取文件图片
+    QIcon fileIcon(const QString &extension) const;
+
+    //设置主服务器后的配置
+    void setUnEdit(QStandardItem *fwq);
+        //还原
+    void setCanEdit();
+        //设置childUnEdit
+    void setChildUnEdit(QStandardItem *child);
+
+    //子节点递归全选
+    void treeItem_checkAllChild(QStandardItem * item, bool check);
+    void treeItem_checkAllChild_recursion(QStandardItem * item,bool check);
+    void treeItem_CheckChildChanged(QStandardItem * item);
+    Qt::CheckState checkSibling(QStandardItem *item);
+
+
+    /*---简单的发消息---*/
+    void sendToSvrMessage();
+
+
+};
+
+#endif // WIDGET_H

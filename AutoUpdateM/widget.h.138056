@@ -1,0 +1,71 @@
+﻿#ifndef WIDGET_H
+#define WIDGET_H
+
+#include <QWidget>
+#include <QtWidgets>
+#include <QtSql/QtSql>
+#include "mydatabase.h"
+#include <QFile>
+class Widget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    Widget(QWidget *parent = 0);
+    ~Widget();
+
+private slots:
+    void treeClick(const QModelIndex &index);
+    void treeItemChanged(QStandardItem * item);
+
+    void updateCheckTree(QModelIndex);
+    void saveTable(bool);
+//Action
+public:
+    QAction *exitAction;
+    QAction *saveAction;
+    QStatusBar *statusbar;
+
+private:
+    QTreeView *view;
+    MyDataBase *m_pDB;
+    QTableView * tview;
+    QStandardItemModel *tmodel;
+    QSqlRelationalTableModel *qtm;
+
+
+
+    //checktree and Configuration file
+    QSplitter *config;
+    QTreeView *checkedTree;
+    //菜单
+    QMenuBar *menubar;
+
+private:
+    void iniAction();
+    void iniConnect();
+    void iniTable();
+    void iniTree();
+    //通过数据库新建节点
+    void addCheckedItem();
+    //上传文件表
+    void iniUploadTable();
+    //绑定数据
+    void addUploadFile();
+
+    void updateTree();
+    void updateTable();
+
+    //加载样式表
+    void initStyle();
+
+    bool ConnectDB(QString strPath);
+
+    //子节点递归全选
+    void treeItem_checkAllChild(QStandardItem * item, bool check);
+    void treeItem_checkAllChild_recursion(QStandardItem * item,bool check);
+    void treeItem_CheckChildChanged(QStandardItem * item);
+    Qt::CheckState checkSibling(QStandardItem *item);
+};
+
+#endif // WIDGET_H
