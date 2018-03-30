@@ -402,7 +402,8 @@ void XmlConfig::parseDownloadXML(QString xmlStr,QSqlQuery sq)
                                                  "%1,%2,%3,%4,'%5','%6','%7','%8','%9','%10','%11','%12','%13','%14','%15','%16','%17','%18','%19')"
                                                  "").arg(id).arg(code).arg(number).arg(dwCode).arg(classCode).arg(name).arg(bCode).arg(upbCode)
                     .arg(eight).arg(nine).arg(ten).arg(eleven).arg(twelve).arg(thirteen).arg(fourteen).arg(fifteen).arg(sixteen).arg(seventeen).arg(ip);
-            sq.exec(sql);
+            qDebug()<<sql;
+            n = n.nextSibling();
         }
     }
 }

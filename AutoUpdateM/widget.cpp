@@ -197,6 +197,9 @@ void Widget::uploadDataSlot()
     /*
      *将本地的BD_AU_单位字典表上传同步到服务器上（根据其唯一编码）
      */
+    qDebug()<<m_addrIndex;
+    if(m_addrIndex<1)
+        return;
     QString sqlStr = QString::fromLocal8Bit("select 编码,ip from BD_AU_单位字典表");
     QString sql;
     QSqlQuery query(QSqlDatabase::database("MyAccessDB"));
